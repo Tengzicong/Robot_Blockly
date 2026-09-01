@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <!-- Robot Blockly 积木编程页面: 由 PySide6 QWebEngineView 加载 -->
+    <title>Robot Blockly</title>
+    <style>
+        html, body {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            overflow: hidden;
+            font-family: "Segoe UI", "Microsoft YaHei", "DejaVu Sans", sans-serif;
+            background-color: #ffffff;
+        }
+        #blocklydiv {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+        }
+        #hint {
+            position: absolute; top: 6px; right: 10px;
+            font-size: 11px; color: #888;
+            background: rgba(255,255,255,0.7);
+            padding: 2px 8px; border-radius: 8px;
+            pointer-events: none; z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="hint">拖拽积木搭建机器人动作序列, 在主程序点击"生成代码"或"运行"</div>
+    <div id="blocklydiv"></div>
+
+    <!-- 本地内置 Blockly (无需联网) -->
+    <script src="blockly_compressed.js"></script>
+    <script src="blocks_compressed.js"></script>
+    <script src="zh-hans.js"></script>
+    <script src="python_compressed.js"></script>
+    <!-- 宇树自定义积木 + Python 生成器 -->
+    <script src="blocks/unitree_blocks.js"></script>
+
+    <script>
+        var workspace = null;
+        var currentRobot = 'go2';   // 由主程序 setRobotType 设置
+
+        // ===================================================================
+        // 工具箱: 按机器人型号构建 (JS 对象树)
+        // ===================================================================
+        function commonCategories() {
+            return [
+                { kind: 'category', name: '控制', colour: '#5ba55b',
+                  contents: [
+                    { kind: 'block', blockxml: '<block type="unitree_wait"><field name="SEC">1</field></block>' },
+                    { kind: 'block', blockxml: '<block type="unitree_print"><value name="TEXT"><block type="text"><field name="TEXT">hello</field></block></value></block>' }
+                  ]
+                },
+                { kind: 'category', name: '逻辑', colour: '#5b80a5',
+                  contents: [
+                    { kind: 'block', type: 'controls_if' },
+                    { kind: 'block', type: 'logic_compare' },
+                    { kind: 'block', type: 'logic_operation' },
+                    { kind: 'block', type: 'logic_boolean' }
+                  ]
+                },
+                { kind: 'category', name: '循环', colour: '#5ba55b',
+                  contents: [
+                    { kind: 'block', blockxml: '<block type="controls_repeat_ext"><value name="TIMES"><block type="math_number"><field name="NUM">3</field></block></value></block>' },
+                    { kind: 'block', type: 'controls_whileUntil' },
+                    { kind: 'block', type: 'controls_for' }
+                  ]
+                },
+                { kind: 'category', name: '数学', colour: '#5b67a5',
+                  contents: [
+                    { kind: 'block', blockxml: '<block type="math_number"><field name="NUM">0</field></block>' },
+                    { kind: 'block', type: 'math_arithmetic' }
+                  ]
+                },
+                { kind: 'category', name: '文本', colour: '#5ba5a5',
+                  contents: [
+                    { kind: 'block', blockxml: '<block type="text"><field name="TEXT"></field></block>' },
+                    { kind: 'block', type: 'text_print' }
+                  ]
+                },
+                { kind: 'category', name: '变量', colour: '#a55b5b', custom: 'VARIABLE' },
+                { kind: 'category', name: '函数', colour: '#995ba5', custom: 'PROCEDURE' }
+            ];
+        }
+
+        function go2Category() {
+            return { kind: 'category', name: 'Go2 动作', colour: '#2a7fff', contents: [
+                { kind: 'block', blockxml: '<block type="go2_stand_up"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_stand_down"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_damp"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_balance_stand"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_recovery_stand"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_stop_move"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_move"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_euler"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_speed_level"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_hello"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_stretch"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_heart"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_dance1"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_dance2"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_front_flip"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_back_flip"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_left_flip"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_front_jump"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_free_walk"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_static_walk"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_trot_run"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_pose"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_hand_stand"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_free_bound"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_free_jump"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_free_avoid"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_walk_upright"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_cross_step"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_classic_walk"></block>' },
+                { kind: 'block', blockxml: '<block type="go2_auto_recovery"></block>' }
+            ]};
+        }
+
+        function g1Category() {
+            return { kind: 'category', name: 'G1 动作', colour: '#8e44ad', contents: [
+                { kind: 'block', blockxml: '<block type="g1_start"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_damp"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_sit"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_squat2stand"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_lie2stand"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_stand_up2squat"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_zero_torque"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_stop_move"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_high_stand"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_low_stand"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_move"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_balance_stand"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_wave_hand"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_wave_hand_turn"></block>' },
+                { kind: 'block', blockxml: '<block type="g1_shake_hand"></block>' }
+            ]};
+        }
+
+        // G1 手臂 + 音频子分类
+        function g1ArmAudioCategory() {
+            return [
+                { kind: 'category', name: 'G1 手臂', colour: '#6c2c86', contents: [
+                    { kind: 'block', blockxml: '<block type="g1_arm_action"></block>' },
+                    { kind: 'block', blockxml: '<block type="g1_release_arm"></block>' }
+                ]},
+                { kind: 'category', name: 'G1 音频', colour: '#a55b80', contents: [
+                    { kind: 'block', blockxml: '<block type="g1_tts"></block>' },
+                    { kind: 'block', blockxml: '<block type="g1_set_volume"></block>' },
+                    { kind: 'block', blockxml: '<block type="g1_led"></block>' }
+                ]}
+            ];
+        }
+
+        function buildToolbox(robot) {
+            var setupCat = { kind: 'category', name: '机器人', colour: '#5ba55b', contents: [
+                { kind: 'block', blockxml:
+                  '<block type="unitree_setup"></block>' },
+                { kind: 'block', blockxml: '<block type="unitree_wait"></block>' },
+                { kind: 'block', blockxml: '<block type="unitree_print"></block>' }
+            ]};
+            var cats = [setupCat];
+            if (robot === 'go2') {
+                cats.push(go2Category());
+            } else {
+                cats.push(g1Category());
+                cats = cats.concat(g1ArmAudioCategory());
+            }
+            cats = cats.concat(commonCategories());
+            return { kind: 'categoryToolbox', contents: cats };
+        }
+
+        // ===================================================================
+        // 初始化
+        // ===================================================================
+        function initBlockly() {
+            Blockly.setLocale(Blockly.Msg);
+            window.UNITREE_ROBOT = currentRobot;
+            // 计算 media 绝对路径 (file:// 协议下相对路径在 WebEngine 里易失效, 会导致
+            // 垃圾桶/关闭按钮 sprite 加载失败, 从而显示成尺寸异常的占位符)
+            var base = (location.href || '').replace(/[^/]*$/, '');
+            var mediaPath = base + 'media/';
+            workspace = Blockly.inject('blocklydiv', {
+                toolbox: buildToolbox(currentRobot),
+                media: mediaPath,
+                renderer: 'zelos',
+                grid: { spacing: 24, length: 3, colour: '#d4d4d4', snap: true },
+                zoom: {
+                    controls: true, wheel: true, startScale: 1.0,
+                    maxScale: 2.5, minScale: 0.4, scaleSpeed: 1.15
+                },
+                trashcan: true,
+                move: { scrollbars: true, drag: true, wheel: false },
+                sounds: false,
+                // geras/zelos 渲染器主题: 内置控件(垃圾桶/zoom按钮)尺寸标准化
+                theme: Blockly.Themes.Classic
+            });
+            loadDefaultBlocks();
+        }
+
+        // 默认示例: 按型号载入对应动作序列
+        function loadDefaultBlocks(robot) {
+            robot = robot || currentRobot;
+            var xmlText;
+            if (robot === 'g1') {
+                // G1: 程序开始 + 平衡站立 + 移动 + 等待 + 语音播报
+                xmlText =
+                    '<xml xmlns="https://developers.google.com/blockly/xml">' +
+                    '  <block type="unitree_setup" x="40" y="40">' +
+                    '    <next><block type="g1_balance_stand">' +
+                    '      <next><block type="g1_move">' +
+                    '        <field name="VX">0.2</field><field name="VY">0</field><field name="VYAW">0</field><field name="CONT">false</field>' +
+                    '        <next><block type="unitree_wait"><field name="SEC">2</field>' +
+                    '          <next><block type="g1_tts">' +
+                    '            <field name="TEXT">你好</field><field name="SPK">0</field>' +
+                    '          </block></next>' +
+                    '        </block></next>' +
+                    '      </block></next>' +
+                    '    </block></next>' +
+                    '  </block>' +
+                    '</xml>';
+            } else {
+                // Go2: 程序开始 + 站立 + 移动 + 等待 + 趴下
+                xmlText =
+                    '<xml xmlns="https://developers.google.com/blockly/xml">' +
+                    '  <block type="unitree_setup" x="40" y="40">' +
+                    '    <next><block type="go2_stand_up">' +
+                    '      <next><block type="go2_move">' +
+                    '        <field name="VX">0.3</field><field name="VY">0</field><field name="VYAW">0</field><field name="DUR">2</field>' +
+                    '        <next><block type="go2_stop_move">' +
+                    '          <next><block type="go2_stand_down"></block></next>' +
+                    '        </block></next>' +
+                    '      </block></next>' +
+                    '    </block></next>' +
+                    '  </block>' +
+                    '</xml>';
+            }
+            try {
+                var dom = Blockly.utils.xml.textToDom(xmlText);
+                Blockly.Xml.domToWorkspace(dom, workspace);
+            } catch (e) { console.error('加载默认积木失败:', e); }
+        }
+
+        // ===================================================================
+        // 与 PySide6 主程序交互的接口
+        // ===================================================================
+        // 切换机器人型号: 清空工作区 + 重建工具箱 + 注入型号 + 载入该型号默认程序
+        function setRobotType(robot) {
+            currentRobot = (robot === 'g1') ? 'g1' : 'go2';
+            window.UNITREE_ROBOT = currentRobot;
+            if (workspace) {
+                workspace.clear();
+                workspace.updateToolbox(buildToolbox(currentRobot));
+                loadDefaultBlocks(currentRobot);
+            }
+        }
+
+        // 主程序注入网络接口 (工具栏输入), 供 setup 块生成时使用
+        function setIface(iface) {
+            window.UNITREE_IFACE = iface || '';
+        }
+
+        // 生成 Python 代码
+        function generatePythonCode() {
+            if (!workspace) return '# Blockly 工作区尚未初始化';
+            // 必须存在「程序开始」块且其后连接了动作块, 否则视为未搭建程序, 不生成代码
+            var setupBlock = null;
+            var topBlocks = workspace.getTopBlocks(true);
+            for (var i = 0; i < topBlocks.length; i++) {
+                if (topBlocks[i].type === 'unitree_setup') {
+                    setupBlock = topBlocks[i];
+                    break;
+                }
+            }
+            if (!setupBlock || !setupBlock.getNextBlock()) {
+                return '# NO_PROGRAM: 请先在工具箱添加「程序开始」块, 并在其后连接动作块';
+            }
+            try {
+                // 只从「程序开始」块沿 next 链生成代码: 未连接在程序开始之后的
+                // 孤立散块不会生成, 保证生成的是完整、有序的执行链。
+                // 注意: blockToCode 单独调用不会走 init/finish 流程, 积木收集到
+                // definitions_ 里的 import 语句不会拼进结果, 导致生成的代码缺
+                // import, 运行时在 ChannelFactoryInitialize (网卡初始化) 行报
+                // NameError。这里手动按 workspaceToCode 的顺序 init → blockToCode
+                // → finish, 让 imports 正确拼接到代码头部。
+                Blockly.Python.init(workspace);
+                var result = Blockly.Python.blockToCode(setupBlock);
+                var body = (Array.isArray(result) ? result[0] : result) || '';
+                var code = Blockly.Python.finish(body);
+                var header =
+                    '# -*- coding: utf-8 -*-\n' +
+                    '# 由 Robot Blockly 自动生成\n' +
+                    '# 警告: 请确保机器人周围无障碍物与人员再运行!\n\n';
+                return header + code;
+            } catch (e) {
+                return '# 生成代码时出错: ' + e.message;
+            }
+        }
+
+        // 导出/导入 工作区 XML (保存/加载程序)
+        function exportXml() {
+            if (!workspace) return '';
+            try {
+                var dom = Blockly.Xml.workspaceToDom(workspace);
+                return Blockly.Xml.domToText(dom);
+            } catch (e) { return ''; }
+        }
+        function importXml(xmlText) {
+            if (!workspace || !xmlText) return false;
+            try {
+                workspace.clear();
+                var dom = Blockly.utils.xml.textToDom(xmlText);
+                Blockly.Xml.domToWorkspace(dom, workspace);
+                return true;
+            } catch (e) { console.error('导入失败:', e); return false; }
+        }
+
+        // 清空工作区
+        function clearWorkspace() {
+            if (workspace) workspace.clear();
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', initBlockly);
+    </script>
+</body>
+</html>

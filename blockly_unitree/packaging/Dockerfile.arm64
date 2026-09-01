@@ -1,0 +1,59 @@
+# ============================================================================
+# Robot Blockly  Linux arm64 (aarch64) 构建镜像
+#
+# 在 x86_64 主机上用 docker + buildx + qemu 构建 arm64 环境的:
+#   - cyclonedds==0.10.2 的 aarch64 wheel (源码编译, PyPI 无此 wheel)
+#   - 复用 build_deb.sh 产出 arm64 适用的 deb (conda-based)
+#
+# 用法: 见 build_linux_arm64.sh (build context = 仓库根 unitree/)
+# ============================================================================
+FROM --platform=linux/arm64 debian:bookworm
+
+# qemu 仿真下避免交互式 tzdata 卡住
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 构建依赖: 编译 cyclonedds 0.10.2 需要 cmake>=3.18 + 编译工具链
+# 国内访问 deb.debian.org 极慢 (~48kB/s), 切换清华镜像提速
+# 注意: 基础镜像未装 ca-certificates, 必须用 http 而非 https
+RUN set -eux; \
+    printf '%s\n' \
+        "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ bookworm main contrib non-free non-free-firmware" \
+        "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ bookworm-updates main contrib non-free non-free-firmware" \
+        "deb http://mirrors.tuna.tsinghua.edu.cn/debian-security bookworm-security main contrib non-free non-free-firmware" \
+        > /etc/apt/sources.list; \
+    rm -f /etc/apt/sources.list.d/debian.sources; \
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-dev python3-pip python3-venv \
+        build-essential cmake git pkg-config curl \
+        dpkg-dev fakeroot \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+# context = 仓库根 (unitree/): 只拷入所需目录
+COPY blockly_unitree /workspace/blockly_unitree
+COPY unitree_sdk2_python /workspace/unitree_sdk2_python
+
+# PEP 668 (Debian) 禁止系统级 pip; 创建 venv 用于编译 cyclonedds wheel
+RUN python3 -m venv /venv
+
+# 编译 CycloneDDS 0.10.2 C 库 (Python wheel 源码构建需要它提供 idlpp 与库文件)
+# 用 python3 urllib 下载 (镜像无 curl/wget)
+RUN set -eux; \
+    python3 - <<'PYEOF' \
+    && tar xzf /tmp/cyclonedds-c.tar.gz -C /tmp \
+    && cmake -S /tmp/cyclonedds-0.10.2 -B /tmp/build-cyclonedds \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_INSTALL_PREFIX=/opt/cyclonedds \
+       -DBUILD_TESTING=OFF \
+    && cmake --build /tmp/build-cyclonedds -j"$(nproc)" \
+    && cmake --install /tmp/build-cyclonedds \
+    && rm -rf /tmp/cyclonedds-0.10.2 /tmp/build-cyclonedds /tmp/cyclonedds-c.tar.gz
+import urllib.request
+urllib.request.urlretrieve(
+    "https://github.com/eclipse-cyclonedds/cyclonedds/archive/refs/tags/0.10.2.tar.gz",
+    "/tmp/cyclonedds-c.tar.gz",
+)
+PYEOF
+
+ENV CYCLONEDDS_HOME=/opt/cyclonedds \
+    CMAKE_PREFIX_PATH=/opt/cyclonedds

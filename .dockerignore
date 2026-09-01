@@ -1,0 +1,9 @@
+# 构建上下文 = 仓库根 (unitree/)
+.git
+.trae
+tutorial_ws
+**/dist
+**/wheels
+**/__pycache__
+**/*.pyc
+**/.DS_Store

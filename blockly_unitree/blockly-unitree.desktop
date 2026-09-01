@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Robot Blockly
+Name[en]=Robot Blockly
+Comment=机器人可视化积木编程 (Go2/G1)
+Comment[en]=Visual block programming for robots (Go2/G1)
+Exec=blockly-unitree
+Icon=blockly-unitree
+Terminal=false
+Categories=Development;Robotics;Education;
+Keywords=Unitree;Robot;Blockly;Go2;G1;
+StartupNotify=true

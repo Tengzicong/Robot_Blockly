@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a7fff"/>
+      <stop offset="1" stop-color="#1b4fb3"/>
+    </linearGradient>
+    <linearGradient id="arm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8e44ad"/>
+      <stop offset="1" stop-color="#6c2c86"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#bg)"/>
+  <!-- 积木格子背景 -->
+  <g stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5" fill="none">
+    <path d="M14 44 H114 M14 64 H114 M14 84 H114"/>
+    <path d="M40 24 V104 M70 24 V104 M100 24 V104"/>
+  </g>
+  <!-- 四足机身 -->
+  <rect x="40" y="52" width="48" height="22" rx="6" fill="#ffffff"/>
+  <!-- 头 -->
+  <rect x="82" y="46" width="16" height="16" rx="4" fill="#ffffff"/>
+  <circle cx="90" cy="54" r="2.4" fill="#1b4fb3"/>
+  <!-- 四条腿 -->
+  <g fill="#ffffff">
+    <rect x="44" y="74" width="6" height="20" rx="3"/>
+    <rect x="56" y="74" width="6" height="20" rx="3"/>
+    <rect x="68" y="74" width="6" height="20" rx="3"/>
+    <rect x="80" y="74" width="6" height="20" rx="3"/>
+  </g>
+  <!-- 上方人形手臂积木 (代表 G1) -->
+  <rect x="46" y="26" width="36" height="14" rx="4" fill="url(#arm)"/>
+  <rect x="58" y="16" width="12" height="12" rx="3" fill="url(#arm)"/>
+  <!-- 连接凸起 -->
+  <g fill="#ffffff" fill-opacity="0.9">
+    <rect x="50" y="40" width="6" height="6" rx="1"/>
+    <rect x="72" y="40" width="6" height="6" rx="1"/>
+  </g>
+</svg>

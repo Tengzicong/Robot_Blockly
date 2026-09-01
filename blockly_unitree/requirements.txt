@@ -1,0 +1,7 @@
+# Robot Blockly 跨平台构建依赖 (PyInstaller 构建机 + 开发)
+# 构建机额外执行: pip install -e ../unitree_sdk2_python (editable 引入 SDK)
+
+PySide6>=6.5,<6.12
+cyclonedds==0.10.2
+numpy
+pyinstaller>=6.0,<7.0
