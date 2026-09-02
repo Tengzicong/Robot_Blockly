@@ -32,7 +32,8 @@ conda activate unitree
 cd blockly_unitree
 pip install -r requirements.txt
 
-# 3. 以 editable 模式安装宇树 SDK
+# 3. 获取宇树官方 SDK (第三方组件, 见下方"第三方组件")
+git clone https://github.com/unitreerobotics/unitree_sdk2_python.git ../unitree_sdk2_python
 pip install -e ../unitree_sdk2_python
 
 # 4. 启动
@@ -75,11 +76,23 @@ unitree/
 │   │   ├── robot_profiles.py # 机器人型号配置
 │   │   └── _paths.py         # 跨平台路径解析
 │   ├── resources/            # Blockly 资源 (JS/HTML/media)
-│   ├── packaging/            # 打包脚本
+│   ├── packaging/            # 打包脚本 (deb/dmg/Windows)
 │   └── requirements.txt
-├── unitree_sdk2_python/      # 宇树官方 Python SDK
-└── tutorial_ws/             # 教程示例
+├── .github/                  # GitHub Actions 自动构建
+├── README.md
+└── DISCLAIMER.md
 ```
+
+> 注：`unitree_sdk2_python`（宇树官方 SDK）与 `tutorial_ws`（教程工作区）为第三方内容，不属于本仓库；打包脚本会在缺少 SDK 时从官方 GitHub 自动拉取。
+
+## 第三方组件
+
+| 组件 | 来源 | 协议 |
+|---|---|---|
+| [unitree_sdk2py](https://github.com/unitreerobotics/unitree_sdk2_python) | 宇树官方 Python SDK | BSD-3-Clause |
+| [Blockly](https://developers.google.com/blockly) | Google 开源积木编辑器 | Apache-2.0 |
+
+以上组件的版权归其各自作者所有，本软件仅在构建/运行时引用，不包含第三方代码的修改。
 
 ## 免责声明
 

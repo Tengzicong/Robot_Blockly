@@ -26,3 +26,6 @@ blockly_unitree/runtime/
 
 # ---- 教程工作区 (第三方资料, 独立仓库, 不入库) ----
 tutorial_ws/
+
+# ---- 宇树官方 SDK (第三方代码, 构建时自动拉取, 不入库) ----
+unitree_sdk2_python/

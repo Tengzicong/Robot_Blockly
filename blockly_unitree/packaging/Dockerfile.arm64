@@ -29,9 +29,9 @@ RUN set -eux; \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
-# context = 仓库根 (unitree/): 只拷入所需目录
+# context = 仓库根 (unitree/): 只拷入本项目
+# (宇树官方 SDK 由容器内 build_deb.sh 自动从 GitHub 拉取, 仓库不内置第三方代码)
 COPY blockly_unitree /workspace/blockly_unitree
-COPY unitree_sdk2_python /workspace/unitree_sdk2_python
 
 # PEP 668 (Debian) 禁止系统级 pip; 创建 venv 用于编译 cyclonedds wheel
 RUN python3 -m venv /venv

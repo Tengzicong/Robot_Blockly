@@ -22,8 +22,21 @@ MAINTAINER="RobotBlockly <dev@example.com>"
 DESC="机器人可视化积木编程桌面软件 (Go2 四足 / G1 人形)"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# 宇树 SDK 源码目录 (本项目上一级)
-SDK_ROOT="$(cd "${ROOT_DIR}/../unitree_sdk2_python" && pwd)"
+
+# 宇树官方 SDK (unitree_sdk2py, BSD-3-Clause): 仓库不内置第三方代码。
+# 优先使用本地已克隆的 ../unitree_sdk2_python; 缺失时从官方 GitHub 拉取 (仅构建期)。
+SDK_TMP=""
+SDK_ROOT=""
+if [ -d "${ROOT_DIR}/../unitree_sdk2_python/unitree_sdk2py" ]; then
+  SDK_ROOT="$(cd "${ROOT_DIR}/../unitree_sdk2_python" && pwd)"
+else
+  echo "==> 未找到 ../unitree_sdk2_python, 从宇树官方 GitHub 拉取 unitree_sdk2py..."
+  SDK_TMP="$(mktemp -d)"
+  git clone --depth 1 https://github.com/unitreerobotics/unitree_sdk2_python.git \
+    "${SDK_TMP}/unitree_sdk2_python" >/dev/null
+  SDK_ROOT="${SDK_TMP}/unitree_sdk2_python"
+  trap 'rm -rf "${SDK_TMP}"' EXIT
+fi
 
 PKG_NAME="${APP_NAME}_${VERSION}_${ARCH}"
 BUILD_DIR="${ROOT_DIR}/dist/${PKG_NAME}"
@@ -58,9 +71,11 @@ mkdir -p "${LIB_DIR}/runtime"
 
 # 3a) 预编译 wheels (linux aarch64 cyclonedds 0.10.2; 供首次安装补依赖)
 if [ -d "${ROOT_DIR}/wheels" ]; then
-  cp -r "${ROOT_DIR}/wheels" "${LIB_DIR}/wheels"
-  _NWH=$(ls "${LIB_DIR}/wheels"/*.whl 2>/dev/null | wc -l)
-  echo "    -> 捆绑 wheels (${_NWH} 个)"
+  _NWH=$(find "${ROOT_DIR}/wheels" -maxdepth 1 -name '*.whl' 2>/dev/null | wc -l)
+  if [ "${_NWH}" -gt 0 ]; then
+    cp -r "${ROOT_DIR}/wheels" "${LIB_DIR}/wheels"
+    echo "    -> 捆绑 wheels (${_NWH} 个)"
+  fi
 fi
 
 # 清理 pyc
