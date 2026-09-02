@@ -17,8 +17,7 @@
 - **摄像头回传** — 实时显示机器人摄像头画面
 - **激光雷达点云** — 叠加显示 Go2 激光雷达点云，支持测距标尺
 - **程序存取** — Blockly XML 工程文件保存 / 加载 / 导出 `.py`
-- **跨平台** — Linux (x64 / arm64)、Windows 10+、macOS 12+ (Intel / Apple Silicon)
-- ## (目前仅支持Linux amd版本)
+- **跨平台** — Linux (x64 / arm64)、Windows 10+、macOS 12+ (Intel / Apple Silicon)目前仅支持Linux amd64版本
 
 ## 快速开始
 
