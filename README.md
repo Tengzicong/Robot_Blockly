@@ -21,6 +21,9 @@
 
 ## 快速开始
 
+### 使用安装包安装
+Linux x64 (https://gitee.com/tengzicong/robot_blockly/releases)
+
 ### 从源码运行
 
 ```bash
