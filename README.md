@@ -24,7 +24,7 @@
 ### 使用安装包安装
 [Linux x64](https://gitee.com/tengzicong/robot_blockly/releases)
 
-### 从源码运行
+### 从源码运行(不建议)
 
 ```bash
 # 1. 创建 conda 环境 (Python 3.10)
@@ -62,31 +62,8 @@ sudo ifconfig <网卡名> 192.168.123.241 netmask 255.255.255.0
 - Go2 固件 ≥ 1.1.6（MCF 模式）
 - 运动控制需先调用 `BalanceStand()` 解锁，再发送 `Move` 指令
 
-## 项目结构
-
-```
-unitree/
-├── blockly_unitree/          # 本项目
-│   ├── app/                  # Python 源码
-│   │   ├── main.py           # 应用入口
-│   │   ├── main_window.py    # 主窗口
-│   │   ├── blockly_view.py   # Blockly WebEngine 视图
-│   │   ├── code_runner.py    # 代码运行器
-│   │   ├── status_monitor.py # 状态监控 (DDS)
-│   │   ├── camera_view.py    # 摄像头 + 雷达点云
-│   │   ├── splash.py         # 启动加载画面
-│   │   ├── env_setup.py      # conda 环境自动管理
-│   │   ├── robot_profiles.py # 机器人型号配置
-│   │   └── _paths.py         # 跨平台路径解析
-│   ├── resources/            # Blockly 资源 (JS/HTML/media)
-│   ├── packaging/            # 打包脚本 (deb/dmg/Windows)
-│   └── requirements.txt
-├── .github/                  # GitHub Actions 自动构建
-├── README.md
-└── DISCLAIMER.md
-```
-
-> 注：`unitree_sdk2_python`（宇树官方 SDK）与 `tutorial_ws`（教程工作区）为第三方内容，不属于本仓库；打包脚本会在缺少 SDK 时从官方 GitHub 自动拉取。
+## 反馈
+如果您有任何反馈。您可以在体验后进入[issues](https://gitee.com/tengzicong/robot_blockly/issues)进行反馈!您的每一份宝贵建议我们都会认真阅读!
 
 ## 第三方组件
 
