@@ -62,6 +62,55 @@ sudo ifconfig <网卡名> 192.168.123.241 netmask 255.255.255.0
 - Go2 固件 ≥ 1.1.6（MCF 模式）
 - 运动控制需先调用 `BalanceStand()` 解锁，再发送 `Move` 指令
 
+## 打包构建
+
+各平台构建脚本位于 `blockly_unitree/packaging/`。**PyInstaller 不支持交叉编译**，产物必须在同架构、同系统的机器上构建。
+
+| 平台 | 脚本 | 产物 | 构建机要求 |
+|---|---|---|---|
+| Linux (x64/arm64) | `build_deb.sh` | `blockly-unitree_<ver>_all.deb` | 任意 Linux |
+| Windows x64 | `build_win.ps1` | `dist/RobotBlockly/` | Windows x64 |
+| macOS Intel | `build_mac.sh` | `RobotBlockly-<ver>-x86_64.dmg` | **Intel Mac** |
+| macOS Silicon | `build_mac.sh` | `RobotBlockly-<ver>-arm64.dmg` | **Apple Silicon** |
+
+### macOS 构建（最低支持 macOS 12）
+
+```bash
+# 前置: Xcode 命令行工具 + Python 3.10+
+xcode-select --install
+
+git clone https://gitee.com/tengzicong/robot_blockly.git
+cd robot_blockly
+
+# Intel Mac 出包（脚本会断言本机架构，不匹配直接报错）
+TARGET_ARCH=x86_64 bash blockly_unitree/packaging/build_mac.sh
+```
+
+产物输出到 `blockly_unitree/dist/`，脚本结束时自动打印架构与系统下限校验：
+
+```bash
+lipo -archs  RobotBlockly.app/Contents/MacOS/RobotBlockly        # 期望 x86_64
+otool -l     RobotBlockly.app/Contents/MacOS/RobotBlockly \
+  | grep -A3 LC_BUILD_VERSION                                    # 期望 minos 12.0
+```
+
+> **macOS 12 兼容的关键约束**：PySide6 6.10+ 的 wheel 标签为 `macosx_13_0`，会把产物下限抬到 macOS 13。`requirements.txt` 已在 darwin 平台锁定 `PySide6<6.10`，请勿放宽。
+
+### 安装说明（macOS）
+
+本软件**未做 Apple 开发者签名与公证**（无证书），首次打开会被 Gatekeeper 拦截。任选一种方式：
+
+1. **右键**应用图标 → **打开** → 弹窗中再点**打开**（仅需一次）
+2. 系统设置 → 隐私与安全性 → 底部提示处点击**仍要打开**
+3. 终端移除隔离属性：
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/RobotBlockly.app
+   ```
+
+安装步骤：双击挂载 `.dmg` → 将 `RobotBlockly.app` 拖入 `Applications` → 弹出磁盘。
+
+要求：**macOS 12 Monterey 及以上**。
+
 ## 反馈
 如果您有任何反馈。您可以在体验后进入[issues](https://gitee.com/tengzicong/robot_blockly/issues)进行反馈!您的每一份宝贵建议我们都会认真阅读!
 
