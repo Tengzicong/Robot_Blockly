@@ -22,7 +22,9 @@
 ## 快速开始
 
 ### 使用安装包安装
-[Linux x64](https://gitee.com/tengzicong/robot_blockly/releases)
+[Linux x64](https://github.com/Tengzicong/Robot_Blockly/releases/latest/download/Robot-blockly_0.1.2_amd64.deb)
+[mac intel](https://github.com/Tengzicong/Robot_Blockly/releases/latest/download/RobotBlockly-0.1.1-x86_64.dmg)
+
 
 ### 从源码运行(不建议)
 
