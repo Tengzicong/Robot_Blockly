@@ -78,15 +78,16 @@ jobs:
 
   # --------------------------- macOS (dual-arch) --------------------------
   # arm64 机跑出 _arm64.dmg; x86_64 机跑出 _x86_64.dmg
+  # 注: macos-13 (Intel) 已于 2025-12-04 下线, Intel 构建须用 macos-15-intel
   macos:
     name: macOS ${{ matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14      # Apple Silicon
+          - os: macos-14        # Apple Silicon
             arch: arm64
-          - os: macos-13      # Intel
+          - os: macos-15-intel  # Intel x86_64
             arch: x86_64
     runs-on: ${{ matrix.os }}
     steps:
@@ -94,9 +95,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+      - name: Verify runner architecture
+        run: |
+          echo "runner arch: $(uname -m)"
+          [ "$(uname -m)" = "${{ matrix.arch }}" ] || {
+            echo "::error::runner 架构与 matrix.arch 不符"; exit 1; }
       - name: Install icon + build toolchain
         run: brew install librsvg cmake || true
       - name: Build dmg
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
+          MIN_MACOS: "12.0"
         run: |
           cd blockly_unitree
           bash packaging/build_mac.sh

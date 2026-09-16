@@ -127,7 +127,9 @@ if sys.platform == "darwin":
         bundle_identifier="com.blocklyunitree.app",
         info_plist={
             "CFBundleDisplayName": "Robot Blockly",
-            "CFBundleShortVersionString": "0.1.0",
+            "CFBundleShortVersionString": "0.1.1",
+            # 未签名分发, 由 Launch Services 依据此键拦截低于 12.0 的系统
+            "LSMinimumSystemVersion": "12.0",
             "NSHighResolutionCapable": True,
             "NSMicrophoneUsageDescription": "用于与机器人交互",
             "NSCameraUsageDescription": "用于查看机器人摄像头图像",

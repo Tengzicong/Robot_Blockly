@@ -1,7 +1,10 @@
 # Robot Blockly 跨平台构建依赖 (PyInstaller 构建机 + 开发)
 # 构建机额外执行: pip install -e ../unitree_sdk2_python (editable 引入 SDK)
 
-PySide6>=6.5,<6.12
+# macOS: PySide6 6.10+ 的 wheel 标签为 macosx_13_0, 会导致产物要求 macOS 13。
+# 本机构建目标为 macOS 12, 故 darwin 上锁到 <6.10 (6.9.x 为 macosx_12_0 universal2)。
+PySide6>=6.5,<6.10; sys_platform == "darwin"
+PySide6>=6.5,<6.12; sys_platform != "darwin"
 cyclonedds==0.10.2
 numpy
 pyinstaller>=6.0,<7.0
