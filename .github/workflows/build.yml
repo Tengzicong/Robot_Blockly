@@ -11,6 +11,10 @@
 #   windows-x64      blockly_unitree/dist/RobotBlockly/  (单目录 + exe)
 #   macos-arm64      blockly_unitree/dist/RobotBlockly-*.dmg
 #   macos-x86_64     blockly_unitree/dist/RobotBlockly-*.dmg
+#
+# 发布 (Release):
+#   推送 v* tag 且 windows-x64 + macos-arm64 构建成功时, 自动创建 GitHub
+#   Release, 把上述产物 (Windows 目录压成 zip) 作为附件上传。
 # ============================================================================
 name: Build
 
@@ -76,40 +80,100 @@ jobs:
           name: windows-x64
           path: blockly_unitree/dist/RobotBlockly/
 
-  # --------------------------- macOS (dual-arch) --------------------------
-  # arm64 机跑出 _arm64.dmg; x86_64 机跑出 _x86_64.dmg
-  # 注: macos-13 (Intel) 已于 2025-12-04 下线, Intel 构建须用 macos-15-intel
-  macos:
-    name: macOS ${{ matrix.arch }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-14        # Apple Silicon
-            arch: arm64
-          - os: macos-15-intel  # Intel x86_64
-            arch: x86_64
-    runs-on: ${{ matrix.os }}
+  # ----------------------- macOS arm64 (Apple Silicon) --------------------
+  # 拆成独立 job (非 matrix), 便于 release 精确依赖 arm64 成功与否。
+  # build_mac.sh 内部会用 TARGET_ARCH 断言本机架构, 不匹配则报错退出。
+  macos-arm64:
+    name: macOS arm64
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Verify runner architecture
-        run: |
-          echo "runner arch: $(uname -m)"
-          [ "$(uname -m)" = "${{ matrix.arch }}" ] || {
-            echo "::error::runner 架构与 matrix.arch 不符"; exit 1; }
       - name: Install icon + build toolchain
         run: brew install librsvg cmake || true
       - name: Build dmg
         env:
-          TARGET_ARCH: ${{ matrix.arch }}
+          TARGET_ARCH: arm64
           MIN_MACOS: "12.0"
         run: |
           cd blockly_unitree
           bash packaging/build_mac.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.arch }}
+          name: macos-arm64
           path: blockly_unitree/dist/RobotBlockly-*.dmg
+
+  # -------------------------- macOS x86_64 (Intel) ------------------------
+  # 注: macos-13 (Intel) 已于 2025-12-04 下线, Intel 构建须用 macos-15-intel
+  macos-x86_64:
+    name: macOS x86_64
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install icon + build toolchain
+        run: brew install librsvg cmake || true
+      - name: Build dmg
+        env:
+          TARGET_ARCH: x86_64
+          MIN_MACOS: "12.0"
+        run: |
+          cd blockly_unitree
+          bash packaging/build_mac.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-x86_64
+          path: blockly_unitree/dist/RobotBlockly-*.dmg
+
+  # --------------------------- 自动发布 GitHub Release ---------------------
+  # 仅在推送 v* tag 时执行; Windows x64 与 macOS arm64 必须成功,
+  # 其余平台 (Linux / Intel mac) 若成功则一并附上, 失败则跳过不阻塞发布。
+  release:
+    name: Publish GitHub Release
+    needs: [linux-x64, linux-arm64, windows, macos-arm64, macos-x86_64]
+    if: >-
+      always() &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      needs.windows.result == 'success' &&
+      needs.macos-arm64.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release files
+        run: |
+          set -e
+          mkdir -p release_files
+          # Linux deb + aarch64 wheel + macOS dmg: 按扩展名收集 (缺哪个跳过哪个)
+          find artifacts -name '*.deb' -exec cp -v {} release_files/ \;
+          find artifacts -name '*.whl' -exec cp -v {} release_files/ \;
+          find artifacts -name '*.dmg' -exec cp -v {} release_files/ \;
+          # Windows 产物是目录, 压缩成单个 zip
+          WIN_DIR="$(find artifacts -type d -name 'RobotBlockly' | head -n1 || true)"
+          if [ -n "$WIN_DIR" ]; then
+            (cd "$(dirname "$WIN_DIR")" && zip -r -q "$GITHUB_WORKSPACE/release_files/RobotBlockly-${GITHUB_REF_NAME}-windows-x64.zip" "$(basename "$WIN_DIR")")
+          fi
+          echo "==> release_files:"
+          ls -la release_files
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Robot Blockly ${{ github.ref_name }}"
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          generate_release_notes: true
+          files: |
+            release_files/*

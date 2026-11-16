@@ -16,7 +16,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-或手动在 Actions 页面点 `Run workflow`。
+或手动在 Actions 页面点 `Run workflow`（手动触发只产出 Artifacts，不发布 Release）。
 
 自动产出 5 份 Artifacts：
 
@@ -27,6 +27,8 @@ git push origin v0.1.0
 | `windows-x64` | `RobotBlockly/` 单目录（含 `RobotBlockly.exe`） |
 | `macos-arm64` | `RobotBlockly-0.1.0-arm64.dmg` |
 | `macos-x86_64` | `RobotBlockly-0.1.0-x86_64.dmg` |
+
+**自动发布 Release**：推送 `v*` tag 且 `windows-x64` + `macos-arm64` 构建成功时，工作流会自动创建一个 GitHub Release（tag 名含 `alpha/beta/rc` 时标记为预发布），并把上述产物作为附件上传（Windows 目录会压缩成 `RobotBlockly-<版本>-windows-x64.zip`）。Linux / Intel mac 若构建成功也会一并附上，失败则跳过、不阻塞发布。
 
 ## 2. 各平台本地构建
 
